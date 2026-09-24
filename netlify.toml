@@ -1,0 +1,34 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# تحويل مسارات /api للدوال (لازم /api/live/stop قبل /api/live)
+[[redirects]]
+  from = "/api/checkin"
+  to = "/.netlify/functions/checkin"
+  status = 200
+
+[[redirects]]
+  from = "/api/checkins"
+  to = "/.netlify/functions/checkins"
+  status = 200
+
+[[redirects]]
+  from = "/api/live/stop"
+  to = "/.netlify/functions/live-stop"
+  status = 200
+
+[[redirects]]
+  from = "/api/live"
+  to = "/.netlify/functions/live"
+  status = 200
+
+# أي مسار تاني يرجّع صفحة React (عشان الراوتر: / و /dashboard)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
