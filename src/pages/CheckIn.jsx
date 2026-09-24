@@ -19,14 +19,15 @@ export default function CheckIn() {
   const [state, setState] = useState(LOADING);
   const [message, setMessage] = useState("بنسجّل حضورك…");
   const [result, setResult] = useState(null); // { address, lat, lng, accuracy }
-  const [typedName, setTypedName] = useState("");
+  const [deviceLabel] = useState(getDeviceLabel);
   const [liveOn, setLiveOn] = useState(false);
   const startedRef = useRef(false);
   const watchRef = useRef(null);
   const lastSentRef = useRef(0);
 
+  // لو اللينك فيه اسم نستخدمه، غير كده اسم ثابت للجهاز
   function nameNow() {
-    return empFromLink || typedName.trim();
+    return empFromLink || deviceLabel;
   }
 
   // ===== الموقع المباشر (لايف) =====
@@ -156,15 +157,11 @@ export default function CheckIn() {
     );
   }
 
-  // يبدأ أوتوماتيك أول ما الصفحة تفتح — بس لو اللينك فيه اسم
+  // يبدأ أوتوماتيك أول ما الصفحة تفتح
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    if (empFromLink) capture();
-    else {
-      setState(IDLE);
-      setMessage("اكتب اسمك عشان نسجّل حضورك.");
-    }
+    capture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -229,23 +226,34 @@ export default function CheckIn() {
       {state === ERROR && <div className="status err">{message}</div>}
       {state === IDLE && <div className="status">{message}</div>}
 
-      {!empFromLink && state !== OK && (
-        <div className="fb">
-          <input
-            type="text"
-            placeholder="اكتب اسمك"
-            autoComplete="name"
-            value={typedName}
-            onChange={(e) => setTypedName(e.target.value)}
-          />
-        </div>
-      )}
-
       {(state === ERROR || state === IDLE) && (
-        <button onClick={capture}>
-          {empFromLink ? "📍 حاول تاني" : "سجّل حضوري"}
-        </button>
+        <button onClick={capture}>📍 حاول تاني</button>
       )}
     </main>
   );
+}
+
+// اسم ثابت للجهاز لو اللينك مفيهوش اسم (بيتحفظ عشان نفس الجهاز ياخد نفس الاسم كل مرة)
+function getDeviceLabel() {
+  const ua = navigator.userAgent || "";
+  const kind = /iPhone|iPad/i.test(ua)
+    ? "iPhone"
+    : /Android/i.test(ua)
+    ? "Android"
+    : /Windows/i.test(ua)
+    ? "Windows"
+    : /Mac/i.test(ua)
+    ? "Mac"
+    : "جهاز";
+  let id = "";
+  try {
+    id = localStorage.getItem("deviceId") || "";
+    if (!id) {
+      id = Math.random().toString(36).slice(2, 6).toUpperCase();
+      localStorage.setItem("deviceId", id);
+    }
+  } catch {
+    id = Math.random().toString(36).slice(2, 6).toUpperCase();
+  }
+  return `${kind} · جهاز ${id}`;
 }
