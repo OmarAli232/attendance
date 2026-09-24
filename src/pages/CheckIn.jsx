@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 // حالات الصفحة
-const IDLE = "idle";
 const LOADING = "loading";
 const OK = "ok";
 const ERROR = "error";
@@ -17,13 +16,19 @@ export default function CheckIn() {
   ).trim();
 
   const [state, setState] = useState(LOADING);
-  const [message, setMessage] = useState("بنسجّل حضورك…");
-  const [result, setResult] = useState(null); // { address, lat, lng, accuracy }
+  const [message, setMessage] = useState("Checking you in…");
   const [deviceLabel] = useState(getDeviceLabel);
   const [liveOn, setLiveOn] = useState(false);
   const startedRef = useRef(false);
   const watchRef = useRef(null);
   const lastSentRef = useRef(0);
+
+  // صفحة الموظف إنجليزي (من الشمال لليمين)
+  useEffect(() => {
+    document.documentElement.lang = "en";
+    document.documentElement.dir = "ltr";
+    document.title = "Attendance Check-in";
+  }, []);
 
   // لو اللينك فيه اسم نستخدمه، غير كده اسم ثابت للجهاز
   function nameNow() {
@@ -97,21 +102,16 @@ export default function CheckIn() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function capture() {
+  function capture() {
     const name = nameNow();
-    if (!name) {
-      setState(ERROR);
-      setMessage("اللينك ده مش مربوط باسم. اكتب اسمك وبعدين اضغط سجّل حضوري.");
-      return;
-    }
     if (!("geolocation" in navigator)) {
       setState(ERROR);
-      setMessage("جهازك مش بيدعم تحديد الموقع.");
+      setMessage("Your device doesn't support location.");
       return;
     }
 
     setState(LOADING);
-    setMessage('بنسجّل حضورك… اضغط "سماح" لو ظهرلك سؤال بالموقع.');
+    setMessage('Checking you in… Tap "Allow" if your browser asks for location.');
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -128,30 +128,23 @@ export default function CheckIn() {
             })
           });
           if (!res.ok) throw new Error("bad_status");
-          const data = await res.json();
-          setResult({
-            address: data.address || "",
-            lat,
-            lng,
-            accuracy: Math.round(accuracy || 0)
-          });
           setState(OK);
           // نبدأ الموقع المباشر بعد ما الحضور يتسجّل
           startLive(name);
-        } catch (err) {
+        } catch {
           setState(ERROR);
-          setMessage("حصلت مشكلة وقت الإرسال. تأكد إن النت شغّال وحاول تاني.");
+          setMessage("Something went wrong while sending. Check your internet and try again.");
         }
       },
       (err) => {
         setState(ERROR);
         if (err.code === 1)
           setMessage(
-            'لازم تسمح بالوصول للموقع عشان يتسجّل حضورك. افتح إعدادات المتصفح واسمح بالموقع، وبعدين اضغط "حاول تاني".'
+            'Location access is required to check in. Allow location in your browser settings, then tap "Try again".'
           );
         else if (err.code === 2)
-          setMessage("الموقع مش متاح دلوقتي. تأكد إن الـ GPS مفعّل وحاول في مكان مكشوف.");
-        else setMessage('أخد وقت طويل. اضغط "حاول تاني".');
+          setMessage("Location is unavailable right now. Make sure GPS is on and try again.");
+        else setMessage('It took too long. Tap "Try again".');
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
@@ -165,10 +158,6 @@ export default function CheckIn() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const mapsLink = result
-    ? `https://www.google.com/maps?q=${result.lat},${result.lng}`
-    : "#";
-
   return (
     <main className="card">
       <div className="logo" aria-hidden="true">
@@ -178,16 +167,16 @@ export default function CheckIn() {
         </svg>
       </div>
 
-      <h1>تسجيل الحضور</h1>
+      <h1>Attendance Check-in</h1>
       {empFromLink && (
         <div className="who">
-          أهلاً <b>{empFromLink}</b>
+          Hi <b>{empFromLink}</b>
         </div>
       )}
 
       <p className="consent">
-        بفتحك للصفحة دي هيتسجّل اسمك وموقعك الحالي عشان إثبات الحضور، وهيفضل
-        موقعك بيتحدّث مباشرة طول ما الصفحة مفتوحة. تقدر توقفه في أي وقت.
+        Opening this page records your attendance and location. Your location
+        keeps updating while this page is open — you can stop it anytime.
       </p>
 
       {state === LOADING && (
@@ -196,38 +185,29 @@ export default function CheckIn() {
         </div>
       )}
 
-      {state === OK && result && (
+      {state === OK && (
         <div className="status ok">
           <div className="check">✅</div>
-          تمام يا {nameNow()}، اتسجّل حضورك ووصل موقعك.
-          {result.address && (
-            <div className="addr">📍 {result.address}</div>
-          )}
-          <div className="muted">دقة الموقع تقريباً {result.accuracy} متر.</div>
-          <a className="maplink" href={mapsLink} target="_blank" rel="noopener noreferrer">
-            افتح مكانك على الخريطة
-          </a>
-
-          {liveOn && (
+          You're checked in{empFromLink ? `, ${empFromLink}` : ""}.
+          {liveOn ? (
             <div className="live-banner">
-              <span className="live-dot" /> موقعك بيتبعت مباشرة دلوقتي طول ما
-              الصفحة مفتوحة.
+              <span className="live-dot" /> Location sharing is on while this
+              page is open.
               <button className="stop-btn" onClick={stopLive}>
-                إيقاف المشاركة
+                Stop sharing
               </button>
             </div>
-          )}
-          {!liveOn && (
-            <div className="muted">تم إيقاف مشاركة الموقع المباشر.</div>
+          ) : (
+            <div className="muted">Location sharing stopped.</div>
           )}
         </div>
       )}
 
-      {state === ERROR && <div className="status err">{message}</div>}
-      {state === IDLE && <div className="status">{message}</div>}
-
-      {(state === ERROR || state === IDLE) && (
-        <button onClick={capture}>📍 حاول تاني</button>
+      {state === ERROR && (
+        <>
+          <div className="status err">{message}</div>
+          <button onClick={capture}>📍 Try again</button>
+        </>
       )}
     </main>
   );

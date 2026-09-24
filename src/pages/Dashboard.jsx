@@ -55,6 +55,13 @@ export default function Dashboard() {
     load(p);
   }
 
+  // لوحة الأدمن عربي (من اليمين للشمال)
+  useEffect(() => {
+    document.documentElement.lang = "ar";
+    document.documentElement.dir = "rtl";
+    document.title = "لوحة تحكم الحضور";
+  }, []);
+
   // أول تحميل لو فيه كلمة سر محفوظة
   useEffect(() => {
     if (pass) load(pass);
